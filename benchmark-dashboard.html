@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BenchLab — REST vs gRPC Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface2: #f0efeb;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b67;
+    --text3: #9e9e9a;
+    --blue: #378ADD;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --green: #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-text: #085041;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1e1e1b;
+      --surface2: #282825;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #e8e8e4;
+      --text2: #9a9a96;
+      --text3: #6b6b67;
+      --blue-bg: #0c2740;
+      --blue-text: #85B7EB;
+      --green-bg: #062e20;
+      --green-text: #5DCAA5;
+    }
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .header-left p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 3px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .pill-rest { background: var(--blue-bg); color: var(--blue-text); }
+  .pill-grpc { background: var(--green-bg); color: var(--green-text); }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pill-rest .pill-dot { background: var(--blue); }
+  .pill-grpc .pill-dot { background: var(--green); }
+
+  .controls-bar {
+    max-width: 1100px;
+    margin: 0 auto 1.5rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .control-group label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  select {
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: 7px;
+    padding: 6px 28px 6px 10px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239e9e9a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+  }
+
+  .main { max-width: 1100px; margin: 0 auto; }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .metric-val {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .metric-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .metric-gain {
+    font-size: 11px;
+    color: var(--green-text);
+    background: var(--green-bg);
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+  }
+
+  .chart-card.full { grid-column: 1 / -1; }
+
+  .chart-header { margin-bottom: 14px; }
+  .chart-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .chart-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .chart-wrap { position: relative; width: 100%; }
+
+  footer {
+    max-width: 1100px;
+    margin: 1.5rem auto 0;
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    .charts { grid-template-columns: 1fr; }
+    .chart-card.full { grid-column: 1; }
+    header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>BenchLab — REST vs gRPC</h1>
+    <p>SignalWatch · Benchmark de performance inter-services</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <span class="pill pill-rest"><span class="pill-dot"></span>REST / HTTP1.1 + JSON</span>
+    <span class="pill pill-grpc"><span class="pill-dot"></span>gRPC / HTTP2 + Protobuf</span>
+  </div>
+</header>
+
+<div class="controls-bar">
+  <div class="control-group">
+    <label>Scénario payload</label>
+    <select id="scenario" onchange="updateAll()">
+      <option value="light">Léger (~1 KB)</option>
+      <option value="medium" selected>Moyen (~10 KB)</option>
+      <option value="heavy">Lourd (~100 KB)</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Concurrence</label>
+    <select id="concurr" onchange="updateAll()">
+      <option value="1">1 client</option>
+      <option value="10" selected>10 clients</option>
+      <option value="50">50 clients</option>
+      <option value="100">100 clients</option>
+    </select>
+  </div>
+</div>
+
+<div class="main">
+  <div class="metrics" id="metrics"></div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Latence (ms)</div>
+        <div class="chart-sub">Percentiles p50 · p95 · p99</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>REST</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>gRPC</div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="latChart" role="img" aria-label="Latence REST vs gRPC aux percentiles p50, p95, p99">Latence comparée REST et gRPC.</canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Throughput (req/s)</div>
+        <div class="chart-sub">Par niveau de concurrence</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>REST</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>gRPC</div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="tpChart" role="img" aria-label="Throughput REST vs gRPC par nombre de clients">Throughput comparé REST et gRPC.</canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">CPU (%)</div>
+        <div class="chart-sub">Utilisation serveur moyenne sous charge</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>REST</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>gRPC</div>
+      </div>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="cpuChart" role="img" aria-label="Utilisation CPU REST vs gRPC">CPU comparé REST et gRPC.</canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Mémoire (MB)</div>
+        <div class="chart-sub">Heap utilisée côté serveur</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>REST</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>gRPC</div>
+      </div>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="memChart" role="img" aria-label="Utilisation mémoire REST vs gRPC">Mémoire comparée REST et gRPC.</canvas>
+      </div>
+    </div>
+
+    <div class="chart-card full">
+      <div class="chart-header">
+        <div class="chart-title">Latence p95 dans le temps</div>
+        <div class="chart-sub">Stabilité sous charge sur 60 secondes</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>REST</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>gRPC</div>
+      </div>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="timeChart" role="img" aria-label="Évolution latence p95 sur 60 secondes">Latence p95 REST et gRPC dans le temps.</canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Données simulées — à remplacer par les résultats réels du benchmark · BenchLab © 2026</footer>
+
+<script>
+const DATA = {
+  light: {
+    1:   { restLat:[4,9,14],    grpcLat:[2,4,6],    restTp:520,  grpcTp:980,   restCpu:8,  grpcCpu:5,  restMem:110, grpcMem:80  },
+    10:  { restLat:[7,18,28],   grpcLat:[3,7,11],   restTp:1200, grpcTp:3100,  restCpu:22, grpcCpu:14, restMem:130, grpcMem:90  },
+    50:  { restLat:[18,42,65],  grpcLat:[7,15,23],  restTp:2400, grpcTp:7200,  restCpu:51, grpcCpu:32, restMem:170, grpcMem:105 },
+    100: { restLat:[34,78,120], grpcLat:[12,26,40], restTp:3100, grpcTp:10500, restCpu:74, grpcCpu:49, restMem:210, grpcMem:120 },
+  },
+  medium: {
+    1:   { restLat:[9,20,32],    grpcLat:[4,8,13],   restTp:280,  grpcTp:610,  restCpu:14, grpcCpu:8,  restMem:140, grpcMem:95  },
+    10:  { restLat:[18,40,62],   grpcLat:[7,15,23],  restTp:620,  grpcTp:1800, restCpu:35, grpcCpu:21, restMem:170, grpcMem:108 },
+    50:  { restLat:[45,98,148],  grpcLat:[15,32,50], restTp:1100, grpcTp:4200, restCpu:68, grpcCpu:42, restMem:220, grpcMem:128 },
+    100: { restLat:[82,175,265], grpcLat:[26,54,83], restTp:1380, grpcTp:5900, restCpu:88, grpcCpu:61, restMem:280, grpcMem:150 },
+  },
+  heavy: {
+    1:   { restLat:[35,75,115],   grpcLat:[14,28,44],   restTp:55,  grpcTp:130, restCpu:22, grpcCpu:13, restMem:200, grpcMem:130 },
+    10:  { restLat:[72,155,235],  grpcLat:[27,56,86],   restTp:110, grpcTp:360, restCpu:55, grpcCpu:33, restMem:270, grpcMem:155 },
+    50:  { restLat:[180,380,570], grpcLat:[58,120,185], restTp:170, grpcTp:720, restCpu:84, grpcCpu:55, restMem:380, grpcMem:200 },
+    100: { restLat:[320,660,990], grpcLat:[98,200,305], restTp:200, grpcTp:910, restCpu:96, grpcCpu:74, restMem:490, grpcMem:250 },
+  }
+};
+
+let latC, tpC, cpuC, memC, timeC;
+
+function getScenario() { return document.getElementById('scenario').value; }
+function getConcurr()  { return parseInt(document.getElementById('concurr').value); }
+function getD()        { return DATA[getScenario()][getConcurr()]; }
+
+function speedup(a, b) { return (a / b).toFixed(1) + 'x'; }
+
+function updateMetrics(d) {
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Latence p50 — REST</div>
+      <div class="metric-val">${d.restLat[0]} <span style="font-size:14px;font-weight:400;color:var(--text2)">ms</span></div>
+      <div class="metric-footer"><span class="pill pill-rest">REST</span></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Latence p50 — gRPC</div>
+      <div class="metric-val">${d.grpcLat[0]} <span style="font-size:14px;font-weight:400;color:var(--text2)">ms</span></div>
+      <div class="metric-footer"><span class="pill pill-grpc">gRPC</span><span class="metric-gain">${speedup(d.restLat[0], d.grpcLat[0])} plus rapide</span></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Throughput — REST</div>
+      <div class="metric-val">${d.restTp.toLocaleString()} <span style="font-size:14px;font-weight:400;color:var(--text2)">req/s</span></div>
+      <div class="metric-footer"><span class="pill pill-rest">REST</span></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Throughput — gRPC</div>
+      <div class="metric-val">${d.grpcTp.toLocaleString()} <span style="font-size:14px;font-weight:400;color:var(--text2)">req/s</span></div>
+      <div class="metric-footer"><span class="pill pill-grpc">gRPC</span><span class="metric-gain">${speedup(d.grpcTp, d.restTp)} plus</span></div>
+    </div>
+  `;
+}
+
+function makeTimeSeries(p95rest, p95grpc) {
+  const n = 20, r = [], g = [];
+  for (let i = 0; i < n; i++) {
+    r.push(Math.round(p95rest * (0.85 + Math.random() * 0.3)));
+    g.push(Math.round(p95grpc * (0.85 + Math.random() * 0.3)));
+  }
+  return { r, g, labels: Array.from({length: n}, (_, i) => i * 3 + 's') };
+}
+
+function allTp(s) {
+  return {
+    rest: [DATA[s][1].restTp, DATA[s][10].restTp, DATA[s][50].restTp, DATA[s][100].restTp],
+    grpc: [DATA[s][1].grpcTp, DATA[s][10].grpcTp, DATA[s][50].grpcTp, DATA[s][100].grpcTp],
+  };
+}
+
+function initCharts() {
+  const d = getD();
+  const s = getScenario();
+  const tp = allTp(s);
+  const ts = makeTimeSeries(d.restLat[1], d.grpcLat[1]);
+
+  latC = new Chart(document.getElementById('latChart'), {
+    type: 'bar',
+    data: { labels: ['p50', 'p95', 'p99'], datasets: [
+      { label: 'REST', data: d.restLat, backgroundColor: '#378ADD', borderRadius: 4 },
+      { label: 'gRPC', data: d.grpcLat, backgroundColor: '#1D9E75', borderRadius: 4 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { title: { display: true, text: 'ms', font: { size: 11 } }, ticks: { font: { size: 11 } } },
+                x: { ticks: { font: { size: 11 } } } } }
+  });
+
+  tpC = new Chart(document.getElementById('tpChart'), {
+    type: 'bar',
+    data: { labels: ['1', '10', '50', '100'], datasets: [
+      { label: 'REST', data: tp.rest, backgroundColor: '#378ADD', borderRadius: 4 },
+      { label: 'gRPC', data: tp.grpc, backgroundColor: '#1D9E75', borderRadius: 4 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { title: { display: true, text: 'clients', font: { size: 11 } }, ticks: { font: { size: 11 } } },
+                y: { title: { display: true, text: 'req/s', font: { size: 11 } }, ticks: { font: { size: 11 } } } } }
+  });
+
+  cpuC = new Chart(document.getElementById('cpuChart'), {
+    type: 'bar',
+    data: { labels: ['CPU %'], datasets: [
+      { label: 'REST', data: [d.restCpu], backgroundColor: '#378ADD', borderRadius: 4 },
+      { label: 'gRPC', data: [d.grpcCpu], backgroundColor: '#1D9E75', borderRadius: 4 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { min: 0, max: 100, title: { display: true, text: '%', font: { size: 11 } }, ticks: { font: { size: 11 } } } } }
+  });
+
+  memC = new Chart(document.getElementById('memChart'), {
+    type: 'bar',
+    data: { labels: ['Mémoire'], datasets: [
+      { label: 'REST', data: [d.restMem], backgroundColor: '#378ADD', borderRadius: 4 },
+      { label: 'gRPC', data: [d.grpcMem], backgroundColor: '#1D9E75', borderRadius: 4 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { title: { display: true, text: 'MB', font: { size: 11 } }, ticks: { font: { size: 11 } } } } }
+  });
+
+  timeC = new Chart(document.getElementById('timeChart'), {
+    type: 'line',
+    data: { labels: ts.labels, datasets: [
+      { label: 'REST p95', data: ts.r, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,0.08)', tension: 0.35, pointRadius: 2, fill: true },
+      { label: 'gRPC p95', data: ts.g, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', tension: 0.35, pointRadius: 2, fill: true }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { title: { display: true, text: 'ms', font: { size: 11 } }, ticks: { font: { size: 11 } } },
+                x: { ticks: { font: { size: 11 }, maxTicksLimit: 10 } } } }
+  });
+}
+
+function updateAll() {
+  const d = getD();
+  const s = getScenario();
+  const tp = allTp(s);
+  updateMetrics(d);
+
+  latC.data.datasets[0].data = d.restLat;
+  latC.data.datasets[1].data = d.grpcLat;
+  latC.update();
+
+  tpC.data.datasets[0].data = tp.rest;
+  tpC.data.datasets[1].data = tp.grpc;
+  tpC.update();
+
+  cpuC.data.datasets[0].data = [d.restCpu];
+  cpuC.data.datasets[1].data = [d.grpcCpu];
+  cpuC.update();
+
+  memC.data.datasets[0].data = [d.restMem];
+  memC.data.datasets[1].data = [d.grpcMem];
+  memC.update();
+
+  const ts = makeTimeSeries(d.restLat[1], d.grpcLat[1]);
+  timeC.data.datasets[0].data = ts.r;
+  timeC.data.datasets[1].data = ts.g;
+  timeC.update();
+}
+
+updateMetrics(getD());
+initCharts();
+</script>
+</body>
+</html>
