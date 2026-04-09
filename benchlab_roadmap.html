@@ -1,0 +1,228 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono,'Courier New',monospace)}
+.wrap{padding:1rem 0;overflow-x:auto}
+.section{margin-bottom:2rem}
+.section-title{font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-left:4px}
+.branch-row{display:flex;align-items:flex-start;gap:0;margin-bottom:6px}
+.branch-label{font-size:11px;min-width:260px;padding:6px 10px 6px 0;color:var(--color-text-secondary);white-space:nowrap;flex-shrink:0;text-align:right}
+.branch-label b{color:var(--color-text-primary);font-weight:500}
+.commits{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0}
+.commit{font-size:11px;padding:4px 10px;border-radius:20px;white-space:nowrap;border:0.5px solid transparent}
+.c-gray{background:var(--color-background-secondary);color:var(--color-text-secondary);border-color:var(--color-border-tertiary)}
+.c-blue{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+.c-teal{background:#E1F5EE;color:#085041;border-color:#9FE1CB}
+.c-purple{background:#EEEDFE;color:#3C3489;border-color:#CECBF6}
+.c-amber{background:#FAEEDA;color:#633806;border-color:#FAC775}
+.c-coral{background:#FAECE7;color:#712B13;border-color:#F5C4B3}
+.c-green{background:#EAF3DE;color:#27500A;border-color:#C0DD97}
+@media(prefers-color-scheme:dark){
+.c-blue{background:#0c2740;color:#85B7EB;border-color:#185FA5}
+.c-teal{background:#062e20;color:#5DCAA5;border-color:#0F6E56}
+.c-purple{background:#1a1838;color:#AFA9EC;border-color:#534AB7}
+.c-amber{background:#2a1e08;color:#EF9F27;border-color:#854F0B}
+.c-coral{background:#2d1208;color:#F0997B;border-color:#993C1D}
+.c-green{background:#182408;color:#97C459;border-color:#3B6D11}
+}
+.merge-note{font-size:10px;color:var(--color-text-tertiary);padding:2px 8px;border-left:2px solid var(--color-border-secondary);margin-left:4px;margin-top:2px;margin-bottom:6px}
+.release{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;background:#EAF3DE;color:#27500A;border:0.5px solid #C0DD97;margin-top:4px}
+@media(prefers-color-scheme:dark){.release{background:#182408;color:#97C459;border-color:#3B6D11}}
+.release-dot{width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:1.5rem 0}
+</style>
+<div class="wrap">
+
+  <div class="section">
+    <div class="section-title">Init</div>
+
+    <div class="branch-row">
+      <div class="branch-label"><b>main</b></div>
+      <div class="commits">
+        <span class="commit c-gray">chore: initial commit</span>
+      </div>
+    </div>
+
+    <div class="branch-row">
+      <div class="branch-label">develop</div>
+      <div class="commits">
+        <span class="commit c-gray">créée depuis main</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 1 — Structure du projet Go</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>project-init</b></div>
+      <div class="commits">
+        <span class="commit c-blue">chore: init go modules and project structure</span>
+        <span class="commit c-blue">chore(store): add internal/store package skeleton</span>
+        <span class="commit c-blue">chore(proto): add proto directory and sensor.proto</span>
+        <span class="commit c-blue">docs(readme): add project overview and setup instructions</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 2 — Base de données</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>infra-postgres</b></div>
+      <div class="commits">
+        <span class="commit c-amber">chore(db): add PostgreSQL connection in internal/store</span>
+        <span class="commit c-amber">chore(db): add .env template with DB credentials</span>
+        <span class="commit c-amber">feat(db): create sensors table migration</span>
+        <span class="commit c-amber">feat(db): implement CRUD queries in store package</span>
+        <span class="commit c-amber">test(db): add store connection smoke test</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 3 — Service REST</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>rest-service</b></div>
+      <div class="commits">
+        <span class="commit c-blue">chore(rest): init rest-service with Gin</span>
+        <span class="commit c-blue">feat(rest): add POST /sensors endpoint</span>
+        <span class="commit c-blue">feat(rest): add GET /sensors and GET /sensors/:id endpoints</span>
+        <span class="commit c-blue">feat(rest): add PUT /sensors/:id and DELETE /sensors/:id endpoints</span>
+        <span class="commit c-blue">feat(rest): add GET /health endpoint</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 4 — Service gRPC</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>grpc-proto</b></div>
+      <div class="commits">
+        <span class="commit c-teal">feat(proto): define Sensor message and SensorService</span>
+        <span class="commit c-teal">chore(proto): generate Go code from sensor.proto</span>
+        <span class="commit c-teal">docs(proto): document proto fields and enums</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+
+    <div class="branch-row" style="margin-top:10px">
+      <div class="branch-label">feature/<b>grpc-service</b></div>
+      <div class="commits">
+        <span class="commit c-teal">chore(grpc): init grpc-service with grpc-go</span>
+        <span class="commit c-teal">feat(grpc): implement CreateSensor and GetSensor</span>
+        <span class="commit c-teal">feat(grpc): implement ListSensors and UpdateSensor</span>
+        <span class="commit c-teal">feat(grpc): implement DeleteSensor</span>
+        <span class="commit c-teal">feat(grpc): add server reflection for debugging</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 5 — Benchmark</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>benchmark-scripts</b></div>
+      <div class="commits">
+        <span class="commit c-purple">chore(bench): add k6 and ghz to benchmark/scripts</span>
+        <span class="commit c-purple">feat(bench): add k6 scenario A — single read REST vs gRPC</span>
+        <span class="commit c-purple">feat(bench): add k6 scenario B — write POST vs CreateSensor</span>
+        <span class="commit c-purple">feat(bench): add k6 scenario C — progressive load 10 to 100</span>
+        <span class="commit c-purple">docs(bench): document benchmark conditions and commands</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+
+    <div class="branch-row" style="margin-top:10px">
+      <div class="branch-label">feature/<b>benchmark-results</b></div>
+      <div class="commits">
+        <span class="commit c-purple">feat(bench): export scenario A results to JSON</span>
+        <span class="commit c-purple">feat(bench): export scenario B results to JSON</span>
+        <span class="commit c-purple">feat(bench): export scenario C results to JSON</span>
+        <span class="commit c-purple">docs(bench): add benchmark analysis notes</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 6 — Front (bonus)</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>front-service</b></div>
+      <div class="commits">
+        <span class="commit c-coral">chore(front): init front-service with net/http</span>
+        <span class="commit c-coral">feat(front): add HTML templates for sensor list</span>
+        <span class="commit c-coral">feat(front): consume REST service to display sensors</span>
+        <span class="commit c-coral">feat(front): add benchmark dashboard page</span>
+        <span class="commit c-coral">docs(front): document front-service setup</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Phase 7 — Dockerisation (bonus)</div>
+
+    <div class="branch-row">
+      <div class="branch-label">feature/<b>docker-services</b></div>
+      <div class="commits">
+        <span class="commit c-green">chore(docker): add Dockerfile for rest-service</span>
+        <span class="commit c-green">chore(docker): add Dockerfile for grpc-service</span>
+        <span class="commit c-green">chore(docker): add docker-compose with all services</span>
+        <span class="commit c-green">chore(docker): add .dockerignore files</span>
+        <span class="commit c-green">docs(docker): document docker setup and launch commands</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+
+    <div class="branch-row" style="margin-top:10px">
+      <div class="branch-label">feature/<b>docker-benchmark</b></div>
+      <div class="commits">
+        <span class="commit c-green">feat(bench): re-run scenario A in docker environment</span>
+        <span class="commit c-green">feat(bench): re-run scenario B in docker environment</span>
+        <span class="commit c-green">feat(bench): re-run scenario C in docker environment</span>
+        <span class="commit c-green">docs(bench): compare native vs docker benchmark results</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans develop</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-title">Release</div>
+    <div class="branch-row">
+      <div class="branch-label">release/<b>1.0.0</b></div>
+      <div class="commits">
+        <span class="commit c-gray">chore(release): bump version to 1.0.0</span>
+        <span class="commit c-gray">docs(release): finalize README and docs</span>
+      </div>
+    </div>
+    <div class="merge-note">→ merge dans main ET develop</div>
+    <div style="padding-left:4px;margin-top:8px">
+      <span class="release"><span class="release-dot"></span>tag v1.0.0 sur main</span>
+    </div>
+  </div>
+
+</div>
